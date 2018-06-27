@@ -1,0 +1,7 @@
+monit:
+  rootfs: |
+    check filesystem rootfs with path /
+        if SPACE usage > 90% then alert
+  email-alerts: |
+    set alert hostmaster@example.com
+    set mailserver mail.example.com

@@ -1,0 +1,7 @@
+name: monit
+os: Debian, Ubuntu
+os_family: Debian
+version: 201905
+release: 1
+summary: Formula for installing and configuring monit
+description: Formula for installing and configuring monit
