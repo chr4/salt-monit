@@ -4,28 +4,71 @@ monit:
     - enable: true
     - require:
       - pkg: monit
-    - watch:
-      - file: /etc/monit/conf.d/*
 
-# Make sure all files not managed by Salt are removed from /etc/monit/conf.d
-/etc/monit/conf.d:
+{% if grains['os'] == 'FreeBSD' %}
+# FreeBSD doesn't use include by default
+/usr/local/etc/monitrc:
+  file.managed:
+    - user: root
+    - group: wheel
+    - mode: 600
+    - contents:
+      - set daemon 30
+      - set log syslog
+      - include /usr/local/etc/monit.d/*
+    - watch_in:
+      - service: monit
+{% endif %}
+
+# Make sure all files not managed by Salt are removed from configuration directory
+monit-config-directory:
   file.directory:
+{% if grains['os'] == 'FreeBSD' %}
+    - name: /usr/local/etc/monit.d
+    - user: root
+    - group: wheel
+{% else %}
+    - name: /etc/monit/conf.d
     - user: root
     - group: root
+{% endif %}
     - mode: 755
+
+monit-clean-directory:
+  file.directory:
+{% if grains['os'] == 'FreeBSD' %}
+    - name: /usr/local/etc/monit.d
+{% else %}
+    - name: /etc/monit/conf.d
+{% endif %}
     - clean: true
     - require:
 {% for name in pillar['monit'].keys() %}
+{% if grains['os'] == 'FreeBSD' %}
+      - file: /usr/local/etc/monit.d/{{ name }}.conf
+{% else %}
       - file: /etc/monit/conf.d/{{ name }}.conf
+{% endif %}
 {% endfor %}
 
+
 {% for name in pillar['monit'].keys() %}
-/etc/monit/conf.d/{{ name }}.conf:
+monit-{{ name }}:
   file.managed:
+{% if grains['os'] == 'FreeBSD' %}
+    - name: /usr/local/etc/monit.d/{{ name }}.conf
+    - user: root
+    - group: wheel
+{% else %}
+    - name: /etc/monit/conf.d/{{ name }}.conf
     - user: root
     - group: root
+{% endif %}
     - mode: 644
     - contents_pillar: monit:{{ name }}
     - require:
       - pkg: monit
+      - file: monit-config-directory
+    - watch_in:
+      - service: monit
 {% endfor %}
