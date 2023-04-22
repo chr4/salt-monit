@@ -42,15 +42,8 @@ monit-clean-directory:
     - name: /etc/monit/conf.d
 {% endif %}
     - clean: true
-    - require:
-{% for name in pillar['monit'].keys() %}
-{% if grains['os'] == 'FreeBSD' %}
-      - file: /usr/local/etc/monit.d/{{ name }}.conf
-{% else %}
-      - file: /etc/monit/conf.d/{{ name }}.conf
-{% endif %}
-{% endfor %}
-
+    - watch_in:
+      - service: monit
 
 {% for name in pillar['monit'].keys() %}
 monit-{{ name }}:
@@ -71,4 +64,6 @@ monit-{{ name }}:
       - file: monit-config-directory
     - watch_in:
       - service: monit
+    - require_in:
+      - file: monit-clean-directory
 {% endfor %}
